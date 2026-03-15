@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPU Scheduling Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loadingScreen">
+  <div style="position:relative;width:80px;height:80px">
+    <div class="cpu-ring"></div>
+    <div class="cpu-inner">⚙</div>
+  </div>
+  <div class="loader-title">CPU Scheduler</div>
+  <div class="loader-steps" id="loaderStep">Initializing...</div>
+  <div class="loader-bar-wrap">
+    <div class="loader-bar-fill"></div>
+  </div>
+  <div class="loader-sub">v5.3 · OS Project Simulator</div>
+</div>
+
+<div class="wrap" style="animation:floatUp .6s ease both">
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-actions">
+    <button class="ico-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle Dark/Light Theme">🌙</button>
+    <button class="ico-btn" onclick="toggleChat()" id="chatOpenBtn" title="AI Assistant" style="background:linear-gradient(135deg,rgba(91,141,238,.15),rgba(45,212,160,.1));border-color:rgba(91,141,238,.5);color:var(--acc);font-size:1.1rem">🤖</button>
+  </div>
+
+  <!-- Floating particles -->
+  <div class="hdr-particles" aria-hidden="true">
+    <span class="particle" style="--x:10%;--y:20%;--s:6px;--d:0s;--c:#5b8dee"></span>
+    <span class="particle" style="--x:85%;--y:40%;--s:4px;--d:.8s;--c:#2dd4a0"></span>
+    <span class="particle" style="--x:25%;--y:70%;--s:5px;--d:1.4s;--c:#ee5b8d"></span>
+    <span class="particle" style="--x:70%;--y:15%;--s:7px;--d:.4s;--c:#f0b429"></span>
+    <span class="particle" style="--x:55%;--y:80%;--s:4px;--d:1.8s;--c:#5b8dee"></span>
+    <span class="particle" style="--x:40%;--y:10%;--s:5px;--d:1.1s;--c:#2dd4a0"></span>
+  </div>
+
+  <h1 id="mainTitle">CPU Scheduling<br>Simulator</h1>
+
+  <!-- Feature pills -->
+  <div class="hdr-pills">
+    <span class="hdr-pill" style="--c:#5b8dee;animation-delay:.3s">⚡ FCFS</span>
+    <span class="hdr-pill" style="--c:#ee5b8d;animation-delay:.4s">📊 SJF</span>
+    <span class="hdr-pill" style="--c:#2dd4a0;animation-delay:.5s">⚡ SRTF</span>
+    <span class="hdr-pill" style="--c:#f0b429;animation-delay:.6s">🔄 Round Robin</span>
+    <span class="hdr-pill" style="--c:#4eb5f7;animation-delay:.7s">⭐ Priority</span>
+    <span class="hdr-pill" style="--c:#a07af0;animation-delay:.8s">🤖 AI Chat</span>
+  </div>
+
+  <!-- Stats row -->
+  <div class="hdr-stats">
+    <div class="hdr-stat"><span class="hdr-stat-v">6</span><span class="hdr-stat-l">Algorithms</span></div>
+    <div class="hdr-stat-div"></div>
+    <div class="hdr-stat"><span class="hdr-stat-v">9</span><span class="hdr-stat-l">Features</span></div>
+    <div class="hdr-stat-div"></div>
+    <div class="hdr-stat"><span class="hdr-stat-v">🧠</span><span class="hdr-stat-l">Quiz Mode</span></div>
+    <div class="hdr-stat-div"></div>
+    <div class="hdr-stat"><span class="hdr-stat-v">100%</span><span class="hdr-stat-l">Offline</span></div>
+  </div>
+</header>
+
+<!-- ALGO SELECT -->
+<div class="card no-blur" style="overflow:visible!important">
+  <div class="card-title">01 — Select Algorithm</div>
+  <div class="algo-grid" id="algoGrid">
+    <button class="algo-btn active" data-algo="fcfs" onclick="selectAlgo('fcfs',this)"><span class="an">FCFS</span><span class="ad">First Come First Serve</span></button>
+    <button class="algo-btn" data-algo="sjf_np" onclick="selectAlgo('sjf_np',this)"><span class="an">SJF (Non-Pre.)</span><span class="ad">Shortest Job First</span></button>
+    <button class="algo-btn" data-algo="sjf_p" onclick="selectAlgo('sjf_p',this)"><span class="an">SRTF (Preemptive)</span><span class="ad">Shortest Remaining Time</span></button>
+    <button class="algo-btn" data-algo="rr" onclick="selectAlgo('rr',this)"><span class="an">Round Robin</span><span class="ad">Time Quantum</span></button>
+    <button class="algo-btn" data-algo="priority_np" onclick="selectAlgo('priority_np',this)"><span class="an">Priority (NP)</span><span class="ad">Non-Preemptive Priority</span></button>
+    <button class="algo-btn" data-algo="priority_p" onclick="selectAlgo('priority_p',this)"><span class="an">Priority (P)</span><span class="ad">Preemptive Priority</span></button>
+  </div>
+  <div class="opt-row">
+    <div class="opt-box hidden" id="quantumBox">⏱ Quantum: <input type="number" id="quantum" value="3" min="1" max="20"></div>
+    <div class="opt-box hidden" id="agingBox">
+      🕰 Aging Rate: <input type="number" id="agingRate" value="1" min="1" max="10">
+      <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.7rem;color:var(--dim)"><input type="checkbox" id="agingOn"> Enable</label>
+    </div>
+    <div class="opt-box hidden" id="prOrderBox" style="border-color:rgba(78,181,247,.3);background:rgba(78,181,247,.05);color:#4eb5f7">
+      ⭐ Priority:
+      <select id="prOrder" onchange="updatePrHint()" style="background:var(--s2);border:1px solid rgba(78,181,247,.4);color:var(--text);padding:.3rem .6rem;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:.7rem;cursor:pointer;outline:none">
+        <option value="lower_higher">Lower = Higher Priority</option>
+        <option value="higher_higher">Higher = Higher Priority</option>
+      </select>
+    </div>
+    <div class="opt-box opt-cs">
+      ⚙ Context Switch: <input type="number" id="csTime" value="0" min="0" max="10" style="border-color:rgba(240,180,41,.4)">
+      <span style="font-size:.62rem">units</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROCESS TABLE -->
+<div class="card no-blur" style="overflow:visible!important">
+  <div class="card-title">02 — Process Table</div>
+  <div class="tbl-wrap">
+    <table id="procTable">
+      <thead><tr><th>Color</th><th>Name ✎</th><th>Arrival</th><th>Burst</th><th id="prHead" class="hidden">Priority <span id="prOrderHint" style="font-size:.55rem;color:var(--acc4)">(low=high)</span></th><th></th></tr></thead>
+      <tbody id="procBody"></tbody>
+    </table>
+  </div>
+  <div class="action-row">
+    <button class="btn btn-ghost" onclick="addProc()">+ Add Process</button>
+    <div class="dd-wrap">
+      <button class="btn btn-ghost" onclick="toggleDD('sampleDD')" id="sampleBtn">↺ Sample ▾</button>
+      <div class="dd-menu hidden" id="sampleDD"></div>
+    </div>
+    <div class="dd-wrap">
+      <button class="btn btn-yellow" onclick="toggleDD('randomDD')">🎲 Random ▾</button>
+      <div class="dd-menu hidden" id="randomDD"></div>
+    </div>
+    <button class="btn btn-p" onclick="simulate()" id="simBtn" style="font-size:.82rem;padding:.8rem 1.8rem;letter-spacing:.04em" title="Shortcut: Enter">▶ &nbsp;Simulate</button>
+    <button class="btn btn-g" onclick="compareAll()">⚖ Compare All</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="hidden" id="resultsSection" style="animation:floatUp .5s ease both">
+  <div class="stats-grid" id="statsGrid"></div>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem">
+    <button class="btn btn-ghost" onclick="exportCSV()" id="csvBtn">📥 Export CSV</button>
+    <button class="btn btn-ghost" onclick="printPDF()" id="pdfBtn">🖨️ PDF Report</button>
+  </div>
+  <div class="card">
+    <div class="tabs" id="tabsRow"></div>
+    <div id="tabContent"></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+<div id="toastContainer"></div>
+
+<!-- AI CHATBOT PANEL -->
+<div id="chatPanel" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:1000;width:370px;max-width:95vw">
+  <div style="background:var(--s1);border:1px solid var(--bd);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;height:500px">
+    <div style="padding:1rem 1.2rem;background:linear-gradient(135deg,rgba(91,141,238,.15),rgba(45,212,160,.08));border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:.7rem">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--acc3));display:flex;align-items:center;justify-content:center;font-size:1.1rem">🤖</div>
+        <div>
+          <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:.9rem">CPU Scheduler AI</div>
+          <div style="font-size:.6rem;color:var(--acc3);display:flex;align-items:center;gap:.3rem"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc3);display:inline-block"></span>Free &amp; Offline</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button onclick="clearChat()" title="Clear" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:.9rem;padding:.3rem">🗑</button>
+        <button onclick="toggleChat()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:1.1rem;padding:.3rem">✕</button>
+      </div>
+    </div>
+    <div style="padding:.4rem .8rem;background:rgba(45,212,160,.06);border-bottom:1px solid rgba(45,212,160,.2);font-size:.6rem;color:var(--acc3);display:flex;align-items:center;gap:.4rem">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--acc3);display:inline-block"></span>
+      100% Offline · No API Key · Completely Free
+    </div>
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.8rem">
+      <div class="ai-msg">
+        <div style="display:flex;gap:.6rem;align-items:flex-start">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--acc3));display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">🤖</div>
+          <div style="background:var(--s2);border:1px solid var(--bd);border-radius:12px 12px 12px 3px;padding:.7rem .9rem;font-size:.76rem;line-height:1.6;color:var(--text);max-width:280px">
+            আমি তোমার CPU Scheduling Assistant! 🎓<br><br>
+            <span style="color:var(--dim);font-size:.67rem">
+            ✅ 100% Free &amp; Offline · বাংলা+English<br><br>
+            আমাকে জিজ্ঞেস করো:<br>
+            • Algorithm theory &amp; formula<br>
+            • Result analyze করতে<br>
+            • Simulator কীভাবে use করবো<br>
+            • Compare all algorithms<br>
+            • Quantum কত দেবো?
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:.5rem .8rem;display:flex;gap:.4rem;border-top:1px solid var(--bd)">
+      <button class="qp-btn" onclick="sendQuick('আমার result analyze করো')">📊 Analyze</button>
+      <button class="qp-btn" onclick="sendQuick('সব algorithm compare করো')">⚖ Compare</button>
+      <button class="qp-btn" onclick="sendQuick('simulator কীভাবে use করবো?')">❓ How to use</button>
+    </div>
+    <div style="padding:.8rem 1rem;border-top:1px solid var(--bd);display:flex;gap:.5rem">
+      <textarea id="chatInput" placeholder="বাংলা বা English এ লিখো..." rows="2"
+        style="flex:1;background:var(--s2);border:1px solid var(--bd);color:var(--text);padding:.6rem .8rem;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.74rem;resize:none;outline:none;line-height:1.5"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+      <button onclick="sendChat()" id="sendBtn" style="background:linear-gradient(135deg,var(--acc),var(--acc3));border:none;border-radius:10px;width:40px;cursor:pointer;color:white;font-size:1rem;flex-shrink:0">➤</button>
+    </div>
+  </div>
+</div>
+<button onclick="toggleChat()" id="chatFab" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc3));border:none;cursor:pointer;font-size:1.4rem;box-shadow:0 6px 24px rgba(91,141,238,.5);display:flex;align-items:center;justify-content:center" title="AI Assistant">🤖</button>
+
+<script src="script.js"></script>
+</body>
+</html>
